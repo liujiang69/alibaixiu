@@ -92,12 +92,12 @@
                 <div class="col-md-8">
                     <div class="page-action">
                         <!-- show when multiple checked -->
-                        <a class="btn btn-danger btn-sm" href="javascript:;" style="display: none">批量删除</a>
+                        <a class="btn btn-danger btn-sm" href="javascript:;" style="display:none " id="allDel">批量删除</a>
                     </div>
                     <table class="table table-striped table-bordered table-hover">
                         <thead>
                             <tr>
-                                <th class="text-center" width="40"><input type="checkbox"></th>
+                                <th class="text-center" width="40"><input type="checkbox" id="selectAll"></th>
                                 <th class="text-center" width="80">头像</th>
                                 <th>邮箱</th>
                                 <th>昵称</th>
@@ -195,7 +195,7 @@
     <script type="text/html" id="userTpl">
         {{each list}}
         <tr>
-            <td class="text-center"><input type="checkbox"></td>
+            <td class="text-center"><input type="checkbox" data-id="{{$value._id}}"></td>
             <td class="text-center"><img class="avatar" src="{{$value.avatar}}"></td>
             <td>{{$value.email}}</td>
             <td>{{$value.nickName}}</td>
@@ -203,7 +203,7 @@
             <td>{{$value.role == 'admin' ? '超级管理员' : '普通用户'}}</td>
             <td class="text-center" data-id="{{$value._id}}">
                 <a href="javascript:;" class="btn btn-default btn-xs edit">编辑</a>
-                <a href="javascript:;" class="btn btn-danger btn-xs">删除</a>
+                <a href="javascript:;" class="btn btn-danger btn-xs" id="delete">删除</a>
             </td>
         </tr>
         {{/each}}
@@ -349,6 +349,95 @@
                     $('#wjh').prop('checked', true);
                 }
             })
+        })
+
+        // 删除单个
+        $('tbody').on('click', '#delete', function() {
+
+            let id = $(this).parent().attr('data-id')
+            if (confirm('是否删除')) {
+                // console.log(id);
+                $.ajax({
+                    type: 'delete',
+                    url: '/users/' + id,
+                    success: function(res) {
+                        var index = userArr.findIndex(item => item._id == res._id)
+                        console.log(index);
+                        userArr.splice(index, 1)
+
+                        render(userArr)
+                    }
+                })
+
+
+            }
+
+        })
+
+        //删除多个
+        // 实现全选功能  有两个特效 tab切换  全选功能 
+        $('thead input[type="checkbox"]').on('click', function() {
+            // console.log('ok');
+            var flag = $(this).prop('checked')
+                // tbody里面的复选框的状态是由flag的值来决定的
+            $('tbody input[type ="checkbox"]').prop('checked', flag)
+
+            // 如果上面的复选框已经打上勾了 我们就让批量删除按钮显示 
+            if (flag) {
+                $('#allDel').show();
+            } else {
+                $('#allDel').hide();
+            }
+        })
+
+        $('tbody').on('click', 'input[type ="checkbox"]', function() {
+            // 如果下面的复选框选中的个数 恰好等于 它身上的长度  表示下面所有的复选框都已经被选中了
+            let checkLength = $('tbody input[type ="checkbox"]').length
+            let clength = $('tbody input[type ="checkbox"]:checked').length
+
+            if (checkLength == clength) {
+                $('thead  input[type ="checkbox"]').prop('checked', true)
+            } else {
+                $('thead  input[type ="checkbox"]').prop('checked', false)
+            }
+
+            //个数大于一 就按批量删除
+            if (clength > 1) {
+                $('#allDel').show();
+            } else {
+                $('#allDel').hide();
+            }
+
+        })
+
+        // 实现删除
+        $('#allDel').on('click', function() {
+
+            var checkUser = $('tbody input:checked')
+
+            var ids = [];
+            checkUser.each(function(index, item) {
+                ids.push($(item).attr('data-id'))
+            })
+
+            $.ajax({
+                type: 'delete',
+                url: '/users/' + ids.join('-'),
+                success: function(res) {
+                    // console.log(res);
+
+                    res.forEach(element => {
+
+                        var index = userArr.findIndex(item => item._id == element._id)
+                        console.log(index);
+                        userArr.splice(index, 1)
+
+                        render(userArr)
+                    });
+
+                }
+            })
+
         })
     </script>
 
